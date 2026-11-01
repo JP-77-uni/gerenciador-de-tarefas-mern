@@ -1,44 +1,59 @@
+
 const mongoose = require("mongoose");
 const Task = require("../models/Task");
 
-const handleError = (error, res, fallbackMessage) => {
-    if (error.name === "ValidationError") {
-        const messages = Object.values(error.errors).map((item) => item.message);
-
-        return res.status(400).json({
-            message: messages.join(", ")
-        });
-    }
-
-    if (error.name === "CastError") {
-        return res.status(400).json({
-            message: "ID inválido"
-        });
-    }
-
-    return res.status(500).json({
-        message: fallbackMessage
-    });
+const sanitizeText = (value) => {
+    return value
+        .replace(/<[^>]*>/g, "")
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, "")
+        .trim();
 };
 
-const createTask = async (req, res) => {
+const createTask = async (req, res, next) => {
     try {
         const { title, description, status } = req.body;
 
+        if (
+            typeof title !== "string" ||
+            !title.trim()
+        ) {
+            return res.status(400).json({
+                message: "O título é obrigatório"
+            });
+        }
+
+        if (
+            description !== undefined &&
+            typeof description !== "string"
+        ) {
+            return res.status(400).json({
+                message: "Descrição inválida"
+            });
+        }
+
+        if (
+            status !== undefined &&
+            !["pendente", "concluída"].includes(status)
+        ) {
+            return res.status(400).json({
+                message: "Status inválido"
+            });
+        }
+
         const task = await Task.create({
-            title,
-            description,
-            status,
+            title: sanitizeText(title),
+            description: sanitizeText(description || ""),
+            status: status || "pendente",
             user: req.userId
         });
 
         return res.status(201).json(task);
     } catch (error) {
-        return handleError(error, res, "Erro ao criar tarefa");
+        next(error);
     }
 };
 
-const getTasks = async (req, res) => {
+const getTasks = async (req, res, next) => {
     try {
         const tasks = await Task.find({
             user: req.userId
@@ -48,11 +63,11 @@ const getTasks = async (req, res) => {
 
         return res.json(tasks);
     } catch (error) {
-        return handleError(error, res, "Erro ao buscar tarefas");
+        next(error);
     }
 };
 
-const updateTask = async (req, res) => {
+const updateTask = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { title, description, status } = req.body;
@@ -65,14 +80,52 @@ const updateTask = async (req, res) => {
 
         const updates = {};
 
-        if (title !== undefined) updates.title = title;
-        if (description !== undefined) updates.description = description;
-        if (status !== undefined) updates.status = status;
+        if (title !== undefined) {
+            if (typeof title !== "string" || !title.trim()) {
+                return res.status(400).json({
+                    message: "O título é inválido"
+                });
+            }
+
+            updates.title = sanitizeText(title);
+        }
+
+        if (description !== undefined) {
+            if (typeof description !== "string") {
+                return res.status(400).json({
+                    message: "Descrição inválida"
+                });
+            }
+
+            updates.description = sanitizeText(description);
+        }
+
+        if (status !== undefined) {
+            if (!["pendente", "concluída"].includes(status)) {
+                return res.status(400).json({
+                    message: "Status inválido"
+                });
+            }
+
+            updates.status = status;
+        }
+
+        if (Object.keys(updates).length === 0) {
+            return res.status(400).json({
+                message: "Informe os dados que deseja atualizar"
+            });
+        }
 
         const task = await Task.findOneAndUpdate(
-            { _id: id, user: req.userId },
+            {
+                _id: id,
+                user: req.userId
+            },
             updates,
-            { new: true, runValidators: true }
+            {
+                new: true,
+                runValidators: true
+            }
         );
 
         if (!task) {
@@ -83,11 +136,11 @@ const updateTask = async (req, res) => {
 
         return res.json(task);
     } catch (error) {
-        return handleError(error, res, "Erro ao atualizar tarefa");
+        next(error);
     }
 };
 
-const deleteTask = async (req, res) => {
+const deleteTask = async (req, res, next) => {
     try {
         const { id } = req.params;
 
@@ -112,7 +165,7 @@ const deleteTask = async (req, res) => {
             message: "Tarefa excluída com sucesso"
         });
     } catch (error) {
-        return handleError(error, res, "Erro ao excluir tarefa");
+        next(error);
     }
 };
 

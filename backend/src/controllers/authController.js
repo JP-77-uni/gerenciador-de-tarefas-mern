@@ -1,33 +1,49 @@
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
-const register = async (req, res) => {
+const register = async (req, res, next) => {
     try {
         const { name, email, password } = req.body;
 
-        if (!name || !email || !password) {
+        if (
+            typeof name !== "string" ||
+            typeof email !== "string" ||
+            typeof password !== "string" ||
+            !name.trim() ||
+            !email.trim() ||
+            !password
+        ) {
             return res.status(400).json({
                 message: "Nome, email e senha são obrigatórios"
             });
         }
 
-        if (password.length < 6) {
+        if (name.trim().length > 100) {
             return res.status(400).json({
-                message: "A senha deve ter pelo menos 6 caracteres"
+                message: "O nome deve ter no máximo 100 caracteres"
             });
         }
 
+        if (password.length < 6 || password.length > 128) {
+            return res.status(400).json({
+                message: "A senha deve ter entre 6 e 128 caracteres"
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        if (!emailRegex.test(email)) {
+        if (!emailRegex.test(normalizedEmail)) {
             return res.status(400).json({
                 message: "Email inválido"
             });
         }
 
         const existingUser = await User.findOne({
-            email: email.toLowerCase()
+            email: normalizedEmail
         });
 
         if (existingUser) {
@@ -39,8 +55,8 @@ const register = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await User.create({
-            name,
-            email: email.toLowerCase(),
+            name: name.trim(),
+            email: normalizedEmail,
             password: hashedPassword
         });
 
@@ -53,25 +69,28 @@ const register = async (req, res) => {
             }
         });
     } catch (error) {
-        return res.status(500).json({
-            message: "Erro ao cadastrar usuário"
-        });
+        next(error);
     }
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
-        if (!email || !password) {
+        if (
+            typeof email !== "string" ||
+            typeof password !== "string" ||
+            !email.trim() ||
+            !password
+        ) {
             return res.status(400).json({
                 message: "Email e senha são obrigatórios"
             });
         }
 
         const user = await User.findOne({
-            email: email.toLowerCase()
-        });
+            email: email.trim().toLowerCase()
+        }).select("+password");
 
         if (!user) {
             return res.status(401).json({
@@ -91,13 +110,9 @@ const login = async (req, res) => {
         }
 
         const token = jwt.sign(
-            {
-                id: user._id
-            },
+            { id: user._id.toString() },
             process.env.JWT_SECRET,
-            {
-                expiresIn: "1d"
-            }
+            { expiresIn: "1d" }
         );
 
         return res.json({
@@ -110,9 +125,7 @@ const login = async (req, res) => {
             }
         });
     } catch (error) {
-        return res.status(500).json({
-            message: "Erro ao realizar login"
-        });
+        next(error);
     }
 };
 
