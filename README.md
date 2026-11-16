@@ -1,15 +1,49 @@
+
 # Gerenciador de Tarefas — MERN Stack
 
-Aplicação full-stack de gerenciamento de tarefas, com autenticação de usuários e CRUD de tarefas, construída com MongoDB, Express, React e Node.js.
+Aplicação web para gerenciamento de tarefas, desenvolvida utilizando a stack MERN.
 
-## Tecnologias
+## Integrantes
 
-- **Backend:** Node.js, Express, MongoDB (Mongoose), JWT, bcrypt
-- **Frontend:** React (Vite), React Router
+- Juan Carlos Ribeiro Vieira
+- João Pedro de Melo Bezerra
+
+## Tecnologias utilizadas
+
+### Back-end
+- Node.js
+- Express
+- MongoDB
+- Mongoose
+- JWT
+- bcrypt
+- CORS
+- dotenv
+
+### Front-end
+- React
+- Vite
+- React Router
+- JavaScript
+- CSS
+
+## Funcionalidades
+
+- Cadastro de usuários.
+- Login com autenticação JWT.
+- Criptografia de senhas utilizando bcrypt.
+- Criação de tarefas.
+- Listagem de tarefas.
+- Edição de tarefas.
+- Exclusão de tarefas.
+- Alteração de status.
+- Busca de tarefas.
+- Filtro por tarefas pendentes e concluídas.
+- Separação das tarefas por usuário.
 
 ## Estrutura do projeto
 
-```
+```text
 gerenciador-de-tarefas-mern/
 ├── backend/
 │   ├── src/
@@ -20,51 +54,46 @@ gerenciador-de-tarefas-mern/
 │   ├── .env.example
 │   ├── package.json
 │   └── server.js
+│
 ├── frontend/
 │   ├── src/
+│   │   ├── components/
+│   │   ├── data/
 │   │   ├── pages/
 │   │   ├── services/
-│   │   └── App.jsx
+│   │   ├── App.jsx
+│   │   └── main.jsx
 │   └── package.json
+│
 └── README.md
 ```
 
-## Pré-requisitos
+## Requisitos
 
-- Node.js 20.19 ou superior
-- Conta gratuita no MongoDB Atlas
-- Git
+- Node.js 20.19 ou superior.
+- npm.
+- Conta no MongoDB Atlas.
+- Git.
 
-## Instalação e configuração
+## Instalação
 
-### 1. Clonar o repositório
+### 1. Back-end
 
-```bash
-git clone https://github.com/JP-77-uni/gerenciador-de-tarefas-mern.git
-cd gerenciador-de-tarefas-mern
-```
-
-### 2. Configurar o backend
+Entre na pasta:
 
 ```bash
 cd backend
 npm install
 ```
 
-Crie o arquivo `backend/.env` a partir do `.env.example`:
+Crie o arquivo `.env`:
 
 ```env
-MONGODB_URI=mongodb+srv://<usuario>:<senha>@<cluster>.mongodb.net/gerenciador?retryWrites=true&w=majority
-JWT_SECRET=uma-frase-longa-e-aleatoria
+MONGODB_URI=sua_string_de_conexao
+JWT_SECRET=sua_chave_secreta
 PORT=3000
+FRONTEND_URL=http://localhost:5173
 ```
-
-Como obter a `MONGODB_URI`:
-
-1. Crie um cluster gratuito no [MongoDB Atlas](https://www.mongodb.com/atlas).
-2. Em **Database & Network Access**, crie um usuário e uma senha.
-3. Ainda em **Database & Network Access**, na lista de IPs, libere o IP `0.0.0.0/0` (apenas para desenvolvimento).
-4. Em **Clusters > Connect > Drivers**, copie a connection string e substitua `<usuario>` e `<senha>`. Senhas com caracteres especiais precisam ser codificadas (por exemplo, `@` vira `%40`).
 
 Inicie o servidor:
 
@@ -72,59 +101,60 @@ Inicie o servidor:
 npm run dev
 ```
 
-O backend ficará disponível em `http://localhost:3000`. O terminal deve mostrar `MongoDB conectado` e `Servidor iniciado`.
-
-### 3. Configurar o frontend
+### 2. Front-end
 
 Em outro terminal:
 
 ```bash
 cd frontend
 npm install
+```
+
+Crie o arquivo `.env`:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
+
+Inicie a aplicação:
+
+```bash
 npm run dev
 ```
 
-O frontend ficará disponível em `http://localhost:5173`.
+Acesse:
 
-## Autenticação
+http://localhost:5173
 
-As senhas são armazenadas com hash (bcrypt). O login retorna um token JWT, que deve ser enviado no header das rotas protegidas:
+## Endpoints da API
 
-```
-Authorization: Bearer <token>
-```
+| Método | Endpoint | Descrição |
+|---|---|---|
+| POST | /api/auth/register | Cadastro |
+| POST | /api/auth/login | Login |
+| GET | /api/tasks | Listar tarefas |
+| POST | /api/tasks | Criar tarefa |
+| PUT | /api/tasks/:id | Atualizar tarefa |
+| DELETE | /api/tasks/:id | Excluir tarefa |
+| GET | /api/health | Verificar API |
 
-## Endpoints
+## Segurança
 
-| Método | Rota | Descrição | Protegida |
-|--------|------|-----------|-----------|
-| POST | `/api/auth/register` | Cria um novo usuário | Não |
-| POST | `/api/auth/login` | Autentica e retorna um token | Não |
-| GET | `/api/tasks` | Lista as tarefas do usuário | Sim |
-| POST | `/api/tasks` | Cria uma nova tarefa | Sim |
-| PUT | `/api/tasks/:id` | Atualiza uma tarefa | Sim |
-| DELETE | `/api/tasks/:id` | Remove uma tarefa | Sim |
+- Senhas armazenadas com hash bcrypt.
+- Autenticação utilizando JWT.
+- Rotas de tarefas protegidas.
+- Validação dos dados recebidos.
+- CORS configurado.
+- Variáveis sensíveis armazenadas em arquivos .env.
+- Cada usuário acessa somente suas próprias tarefas.
 
-### Modelo da tarefa
+## Banco de dados
 
-| Campo | Tipo | Regras |
-|-------|------|--------|
-| `title` | String | Obrigatório, até 100 caracteres |
-| `description` | String | Opcional, até 500 caracteres, padrão `""` |
-| `status` | String | `pendente` (padrão) ou `concluída` |
-| `user` | ObjectId | Definido automaticamente a partir do token |
+O MongoDB armazena duas coleções principais:
 
-### Respostas de erro
-
-| Código | Situação |
-|--------|----------|
-| 400 | Dados inválidos (validação do Schema) ou ID malformado |
-| 401 | Token ausente, inválido ou expirado |
-| 404 | Tarefa não encontrada para o usuário |
-| 409 | Email já cadastrado |
-| 500 | Erro interno do servidor |
+- Users: informações dos usuários.
+- Tasks: tarefas relacionadas aos usuários.
 
 ## Autores
 
-- Juan Carlos Ribeiro Vieira
-- João Pedro de Melo Bezerra
+Juan Carlos Ribeiro Vieira e João Pedro de Melo Bezerra.
