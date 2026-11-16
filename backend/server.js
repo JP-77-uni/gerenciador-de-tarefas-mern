@@ -1,4 +1,3 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -16,7 +15,7 @@ if (!process.env.MONGODB_URI || !process.env.JWT_SECRET) {
 
 app.use(cors({
     origin: process.env.FRONTEND_URL
-        ? process.env.FRONTEND_URL.split(",").map((origin) => origin.trim())
+        ? process.env.FRONTEND_URL.split(",").map(origin => origin.trim())
         : ["http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"]
@@ -25,7 +24,9 @@ app.use(cors({
 app.use(express.json({ limit: "10kb" }));
 
 app.get("/api/health", (req, res) => {
-    res.json({ message: "API funcionando" });
+    res.json({
+        message: "API funcionando"
+    });
 });
 
 app.use("/api/auth", authRoutes);
@@ -49,7 +50,7 @@ mongoose.connect(process.env.MONGODB_URI)
             console.log(`Servidor iniciado na porta ${PORT}`);
         });
     })
-    .catch((error) => {
+    .catch(error => {
         console.error("Erro ao conectar ao MongoDB:", error.message);
         process.exit(1);
     });

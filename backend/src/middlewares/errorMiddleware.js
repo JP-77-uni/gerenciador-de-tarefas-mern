@@ -1,9 +1,8 @@
-
 const errorMiddleware = (error, req, res, next) => {
     if (error.name === "ValidationError") {
         return res.status(400).json({
             message: Object.values(error.errors)
-                .map((item) => item.message)
+                .map(item => item.message)
                 .join(", ")
         });
     }
