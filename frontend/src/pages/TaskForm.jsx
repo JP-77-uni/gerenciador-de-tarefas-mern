@@ -7,12 +7,14 @@ function TaskForm({ task, onSave, onCancel }) {
         status: "pendente"
     });
 
+    const [error, setError] = useState("");
+
     useEffect(() => {
         if (task) {
             setForm({
-                title: task.title,
+                title: task.title || "",
                 description: task.description || "",
-                status: task.status
+                status: task.status || "pendente"
             });
         } else {
             setForm({
@@ -21,6 +23,8 @@ function TaskForm({ task, onSave, onCancel }) {
                 status: "pendente"
             });
         }
+
+        setError("");
     }, [task]);
 
     const handleChange = (event) => {
@@ -30,14 +34,31 @@ function TaskForm({ task, onSave, onCancel }) {
         });
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
         if (!form.title.trim()) {
+            setError("O título é obrigatório.");
             return;
         }
 
-        onSave(form);
+        if (form.title.trim().length > 100) {
+            setError("O título deve ter no máximo 100 caracteres.");
+            return;
+        }
+
+        if (form.description.length > 500) {
+            setError("A descrição deve ter no máximo 500 caracteres.");
+            return;
+        }
+
+        setError("");
+
+        await onSave({
+            title: form.title.trim(),
+            description: form.description.trim(),
+            status: form.status
+        });
     };
 
     return (
@@ -47,38 +68,54 @@ function TaskForm({ task, onSave, onCancel }) {
             </h2>
 
             <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    name="title"
-                    placeholder="Título"
-                    value={form.title}
-                    onChange={handleChange}
-                />
+                <label>
+                    Título
+                    <input
+                        type="text"
+                        name="title"
+                        maxLength="100"
+                        placeholder="Digite o título"
+                        value={form.title}
+                        onChange={handleChange}
+                        required
+                    />
+                </label>
 
-                <textarea
-                    name="description"
-                    placeholder="Descrição"
-                    value={form.description}
-                    onChange={handleChange}
-                />
+                <label>
+                    Descrição
+                    <textarea
+                        name="description"
+                        maxLength="500"
+                        placeholder="Digite a descrição"
+                        value={form.description}
+                        onChange={handleChange}
+                    />
+                </label>
 
-                <select
-                    name="status"
-                    value={form.status}
-                    onChange={handleChange}
-                >
-                    <option value="pendente">
-                        Pendente
-                    </option>
+                <label>
+                    Status
+                    <select
+                        name="status"
+                        value={form.status}
+                        onChange={handleChange}
+                    >
+                        <option value="pendente">
+                            Pendente
+                        </option>
 
-                    <option value="concluída">
-                        Concluída
-                    </option>
-                </select>
+                        <option value="concluída">
+                            Concluída
+                        </option>
+                    </select>
+                </label>
+
+                {error && (
+                    <p className="error">{error}</p>
+                )}
 
                 <div className="form-buttons">
                     <button type="submit">
-                        {task ? "Salvar" : "Criar tarefa"}
+                        {task ? "Salvar alterações" : "Criar tarefa"}
                     </button>
 
                     <button

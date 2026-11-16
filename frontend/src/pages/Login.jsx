@@ -11,6 +11,7 @@ function Login() {
     });
 
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (event) => {
         setForm({
@@ -21,12 +22,15 @@ function Login() {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+
         setError("");
+        setLoading(true);
 
         try {
             const data = await loginUser(form);
 
             localStorage.setItem("token", data.token);
+
             localStorage.setItem(
                 "user",
                 JSON.stringify(data.user)
@@ -35,39 +39,51 @@ function Login() {
             navigate("/dashboard");
         } catch (error) {
             setError(error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <div className="auth-container">
             <div className="auth-card">
-                <h1>Gerenciador de Tarefas</h1>
+                <h1>TaskFlow</h1>
 
-                <h2>Login</h2>
+                <h2>Bem-vindo de volta!</h2>
+
+                <p>Entre para acessar suas tarefas.</p>
 
                 <form onSubmit={handleSubmit}>
+                    <label>Email</label>
+
                     <input
                         type="email"
                         name="email"
-                        placeholder="Email"
+                        placeholder="Seu email"
                         value={form.email}
                         onChange={handleChange}
+                        required
                     />
+
+                    <label>Senha</label>
 
                     <input
                         type="password"
                         name="password"
-                        placeholder="Senha"
+                        placeholder="Sua senha"
                         value={form.password}
                         onChange={handleChange}
+                        required
                     />
 
-                    <button type="submit">
-                        Entrar
+                    <button type="submit" disabled={loading}>
+                        {loading ? "Entrando..." : "Entrar"}
                     </button>
                 </form>
 
-                {error && <p className="error">{error}</p>}
+                {error && (
+                    <p className="error">{error}</p>
+                )}
 
                 <p>
                     Não possui uma conta?{" "}
