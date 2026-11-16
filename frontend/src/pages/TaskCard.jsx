@@ -1,17 +1,25 @@
-function TaskCard({ task, onEdit, onDelete }) {
+function TaskCard({ task, onEdit, onDelete, onToggle }) {
     return (
-        <div className="task-card">
-            <h3>{task.title}</h3>
+        <article className="task-card">
+            <div className="task-card-content">
+                <h3>{task.title}</h3>
 
-            <p>
-                {task.description || "Sem descrição"}
-            </p>
+                <p>
+                    {task.description || "Sem descrição"}
+                </p>
 
-            <span className={`status ${task.status}`}>
-                {task.status}
-            </span>
+                <span className={`status ${task.status === "concluída" ? "completed" : "pending"}`}>
+                    {task.status}
+                </span>
+            </div>
 
             <div className="task-buttons">
+                <button onClick={() => onToggle(task)}>
+                    {task.status === "pendente"
+                        ? "Concluir"
+                        : "Reabrir"}
+                </button>
+
                 <button onClick={() => onEdit(task)}>
                     Editar
                 </button>
@@ -20,7 +28,7 @@ function TaskCard({ task, onEdit, onDelete }) {
                     Excluir
                 </button>
             </div>
-        </div>
+        </article>
     );
 }
 

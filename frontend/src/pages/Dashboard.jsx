@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import TaskCard from "../components/TaskCard";
-import TaskForm from "../components/TaskForm";
+
+import TaskCard from "./TaskCard";
+import TaskForm from "./TaskForm";
+
 import {
     getTasks,
     createTask,
@@ -16,61 +18,99 @@ function Dashboard() {
     const [editingTask, setEditingTask] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [error, setError] = useState("");
+    const [filter, setFilter] = useState("todas");
+    const [search, setSearch] = useState("");
 
     const user = JSON.parse(
         localStorage.getItem("user") || "{}"
     );
 
+    const handleLogout = () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        navigate("/");
+    };
+
     const loadTasks = async () => {
         try {
             const data = await getTasks();
             setTasks(data);
+            setError("");
         } catch (error) {
             if (
-                error.message.includes("Token")
+                error.message.toLowerCase().includes("token")
             ) {
                 handleLogout();
-            } else {
-                setError(error.message);
+                return;
             }
+
+            setError(error.message);
         }
     };
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
+        if (!localStorage.getItem("token")) {
             navigate("/");
             return;
         }
 
         loadTasks();
-    }, []);
+    }, [navigate]);
+
+    const counts = useMemo(() => ({
+        todas: tasks.length,
+        pendente: tasks.filter(
+            task => task.status === "pendente"
+        ).length,
+        concluída: tasks.filter(
+            task => task.status === "concluída"
+        ).length
+    }), [tasks]);
+
+    const filteredTasks = useMemo(() => {
+        return tasks.filter(task => {
+            const matchesFilter =
+                filter === "todas" || task.status === filter;
+
+            const term = search.trim().toLowerCase();
+
+            const matchesSearch =
+                !term ||
+                `${task.title} ${task.description || ""}`
+                    .toLowerCase()
+                    .includes(term);
+
+            return matchesFilter && matchesSearch;
+        });
+    }, [tasks, filter, search]);
+
+    const handleNewTask = () => {
+        setEditingTask(null);
+        setShowForm(true);
+        setError("");
+    };
+
+    const handleEdit = (task) => {
+        setEditingTask(task);
+        setShowForm(true);
+        setError("");
+    };
 
     const handleSave = async (taskData) => {
         try {
             if (editingTask) {
-                await updateTask(
-                    editingTask._id,
-                    taskData
-                );
+                await updateTask(editingTask._id, taskData);
             } else {
                 await createTask(taskData);
             }
 
             setEditingTask(null);
             setShowForm(false);
-            setError("");
 
             await loadTasks();
         } catch (error) {
             setError(error.message);
         }
-    };
-
-    const handleEdit = (task) => {
-        setEditingTask(task);
-        setShowForm(true);
     };
 
     const handleDelete = async (id) => {
@@ -90,25 +130,29 @@ function Dashboard() {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        navigate("/");
-    };
+    const handleToggleStatus = async (task) => {
+        try {
+            const newStatus =
+                task.status === "pendente"
+                    ? "concluída"
+                    : "pendente";
 
-    const handleNewTask = () => {
-        setEditingTask(null);
-        setShowForm(true);
+            await updateTask(task._id, {
+                status: newStatus
+            });
+
+            await loadTasks();
+        } catch (error) {
+            setError(error.message);
+        }
     };
 
     return (
         <div className="dashboard">
-            <header>
+            <header className="dashboard-header">
                 <div>
-                    <h1>Minhas tarefas</h1>
-                    <p>
-                        Olá, {user.name || "usuário"}!
-                    </p>
+                    <h1>Gerenciador de Tarefas</h1>
+                    <p>Olá, {user.name || "usuário"}!</p>
                 </div>
 
                 <button onClick={handleLogout}>
@@ -116,14 +160,58 @@ function Dashboard() {
                 </button>
             </header>
 
-            {error && (
-                <p className="error">
-                    {error}
-                </p>
-            )}
+            <main className="dashboard-main">
+                {error && (
+                    <p className="error">{error}</p>
+                )}
 
-            <main>
-                {showForm ? (
+                <section className="dashboard-actions">
+                    <h2>Minhas tarefas</h2>
+
+                    <button
+                        className="new-task"
+                        onClick={handleNewTask}
+                    >
+                        + Nova tarefa
+                    </button>
+                </section>
+
+                <section className="task-stats">
+                    <div>
+                        <strong>{counts.todas}</strong>
+                        <span>Total</span>
+                    </div>
+
+                    <div>
+                        <strong>{counts.pendente}</strong>
+                        <span>Pendentes</span>
+                    </div>
+
+                    <div>
+                        <strong>{counts["concluída"]}</strong>
+                        <span>Concluídas</span>
+                    </div>
+                </section>
+
+                <div className="task-filters">
+                    <input
+                        type="text"
+                        placeholder="Buscar tarefa..."
+                        value={search}
+                        onChange={event => setSearch(event.target.value)}
+                    />
+
+                    <select
+                        value={filter}
+                        onChange={event => setFilter(event.target.value)}
+                    >
+                        <option value="todas">Todas</option>
+                        <option value="pendente">Pendentes</option>
+                        <option value="concluída">Concluídas</option>
+                    </select>
+                </div>
+
+                {showForm && (
                     <TaskForm
                         task={editingTask}
                         onSave={handleSave}
@@ -132,27 +220,21 @@ function Dashboard() {
                             setEditingTask(null);
                         }}
                     />
-                ) : (
-                    <button
-                        className="new-task"
-                        onClick={handleNewTask}
-                    >
-                        Nova Tarefa
-                    </button>
                 )}
 
                 <section className="tasks">
-                    {tasks.length === 0 ? (
-                        <p>
-                            Você ainda não possui tarefas.
+                    {filteredTasks.length === 0 ? (
+                        <p className="empty-message">
+                            Nenhuma tarefa encontrada.
                         </p>
                     ) : (
-                        tasks.map((task) => (
+                        filteredTasks.map(task => (
                             <TaskCard
                                 key={task._id}
                                 task={task}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
+                                onToggle={handleToggleStatus}
                             />
                         ))
                     )}

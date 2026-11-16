@@ -13,6 +13,7 @@ function Cadastro() {
 
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleChange = (event) => {
         setForm({
@@ -23,59 +24,98 @@ function Cadastro() {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
+
         setError("");
         setMessage("");
 
-        try {
-            await registerUser(form);
+        if (form.name.trim().length === 0) {
+            setError("Informe seu nome.");
+            return;
+        }
 
-            setMessage("Cadastro realizado com sucesso");
+        if (form.password.length < 6) {
+            setError("A senha deve ter pelo menos 6 caracteres.");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            await registerUser({
+                ...form,
+                name: form.name.trim()
+            });
+
+            setMessage("Cadastro realizado com sucesso!");
 
             setTimeout(() => {
                 navigate("/");
-            }, 1000);
+            }, 1200);
         } catch (error) {
             setError(error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <div className="auth-container">
             <div className="auth-card">
-                <h1>Criar conta</h1>
+                <h1>TaskFlow</h1>
+
+                <h2>Criar conta</h2>
+
+                <p>Cadastre-se para organizar suas tarefas.</p>
 
                 <form onSubmit={handleSubmit}>
+                    <label>Nome</label>
+
                     <input
                         type="text"
                         name="name"
-                        placeholder="Nome"
+                        placeholder="Seu nome"
                         value={form.name}
                         onChange={handleChange}
+                        maxLength="100"
+                        required
                     />
+
+                    <label>Email</label>
 
                     <input
                         type="email"
                         name="email"
-                        placeholder="Email"
+                        placeholder="Seu email"
                         value={form.email}
                         onChange={handleChange}
+                        required
                     />
+
+                    <label>Senha</label>
 
                     <input
                         type="password"
                         name="password"
-                        placeholder="Senha"
+                        placeholder="Crie uma senha"
                         value={form.password}
                         onChange={handleChange}
+                        minLength="6"
+                        maxLength="128"
+                        required
                     />
 
-                    <button type="submit">
-                        Cadastrar
+                    <button type="submit" disabled={loading}>
+                        {loading ? "Cadastrando..." : "Cadastrar"}
                     </button>
                 </form>
 
-                {error && <p className="error">{error}</p>}
-                {message && <p className="success">{message}</p>}
+                {error && (
+                    <p className="error">{error}</p>
+                )}
+
+                {message && (
+                    <p className="success">{message}</p>
+                )}
 
                 <p>
                     Já possui uma conta?{" "}
