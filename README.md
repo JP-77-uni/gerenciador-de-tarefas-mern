@@ -109,7 +109,7 @@ cd frontend
 npm install
 ```
 
-Adicione ao arquivo `.env`:
+Crie o arquivo `.env`:
 
 ```env
 VITE_API_URL=http://localhost:3000/api
